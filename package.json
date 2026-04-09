@@ -1,0 +1,31 @@
+{
+  "name": "lingoquest-service",
+  "version": "0.1.0",
+  "private": true,
+  "description": "Backend service for LingoQuest",
+  "type": "module",
+  "main": "dist/index.js",
+  "scripts": {
+    "dev": "tsx watch src/index.ts",
+    "build": "tsc -p tsconfig.json",
+    "start": "node dist/index.js",
+    "lint": "tsc -p tsconfig.json --noEmit"
+  },
+  "dependencies": {
+    "@google/genai": "^1.44.0",
+    "cors": "^2.8.5",
+    "dotenv": "^17.2.3",
+    "express": "^4.21.2",
+    "firebase-admin": "^13.4.0",
+    "pino": "^9.7.0",
+    "pino-http": "^10.5.0",
+    "zod": "^4.1.11"
+  },
+  "devDependencies": {
+    "@types/cors": "^2.8.19",
+    "@types/express": "^5.0.3",
+    "@types/node": "^24.1.0",
+    "tsx": "^4.21.0",
+    "typescript": "^5.8.3"
+  }
+}
