@@ -1,0 +1,2 @@
+uid,lessonId,topic,learnerLevel,score,awardedXp,completed,completedAt
+"dev-user","table-test-lesson","table test","beginner","100","50","true","2026-04-09T14:53:21.548Z"

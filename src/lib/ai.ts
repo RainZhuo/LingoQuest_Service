@@ -11,22 +11,95 @@ export function hasAiClient() {
   return ai !== null;
 }
 
-export async function generateContent(prompt: string) {
-  if (!ai) {
-    return JSON.stringify({
-      title: "Checking In at a Hotel",
+function extractTopicFromPrompt(prompt: string) {
+  const match = prompt.match(/about "([^"]+)"/i);
+  return match?.[1]?.trim() || "daily English";
+}
+
+function toScenarioTitle(topic: string) {
+  const [scene] = topic.split(" - ");
+  return scene.trim();
+}
+
+function buildScenarioDialogue(topic: string) {
+  const sceneTitle = toScenarioTitle(topic);
+  const normalized = sceneTitle.toLowerCase();
+
+  if (/hotel|入住|旅馆|酒店/.test(sceneTitle)) {
+    return {
+      title: "Hotel Check-in",
       dialogue: [
-        { speaker: "Receptionist", text: "Good evening. How can I help you?" },
-        { speaker: "Guest", text: "Hi, I have a reservation under Lee." },
-        { speaker: "Receptionist", text: "Great. May I see your passport, please?" },
+        { speaker: "Receptionist", text: "Welcome to the hotel. Are you checking in tonight?" },
+        { speaker: "Guest", text: "Yes, I have a reservation under Lee." },
+        { speaker: "Receptionist", text: "Great. Could you show me your passport, please?" },
         { speaker: "Guest", text: "Sure. Here it is." },
       ],
       vocabulary: [
-        { word: "reservation", definition: "an arrangement to keep a room or seat for someone" },
-        { word: "passport", definition: "an official document used for international travel" },
-        { word: "receptionist", definition: "the person who greets guests and helps them at a hotel" },
+        { word: "reservation", definition: "a booking made in advance for a room or service" },
+        { word: "check in", definition: "to arrive and complete the entry process at a hotel" },
+        { word: "passport", definition: "an official travel document that proves your identity" },
       ],
-      grammar: "Use 'I have' to talk about something you already possess, such as a reservation.",
+      grammar: "Use 'I have a reservation under...' to clearly tell hotel staff whose name the booking is under.",
+    };
+  }
+
+  if (/restaurant|点餐|餐厅|coffee|cafe|food|meal/.test(normalized)) {
+    return {
+      title: "Ordering Food",
+      dialogue: [
+        { speaker: "Server", text: "Hi there. What would you like to order today?" },
+        { speaker: "Customer", text: "I'd like a chicken sandwich and a coffee, please." },
+        { speaker: "Server", text: "Sure. Would you like anything else?" },
+        { speaker: "Customer", text: "No, that's all. Thank you." },
+      ],
+      vocabulary: [
+        { word: "order", definition: "to ask for food or drink in a restaurant or cafe" },
+        { word: "anything else", definition: "a common follow-up question asking if you want more items" },
+        { word: "that's all", definition: "a polite way to say you do not want anything more" },
+      ],
+      grammar: "Use 'I'd like...' for polite ordering when you want to ask for food or drinks.",
+    };
+  }
+
+  if (/direction|问路|airport|station|travel|bus|subway|taxi/.test(normalized)) {
+    return {
+      title: "Asking for Directions",
+      dialogue: [
+        { speaker: "Local", text: "You look a little lost. Where are you trying to go?" },
+        { speaker: "Traveler", text: "I'm trying to get to the train station." },
+        { speaker: "Local", text: "Go straight for two blocks and turn left at the bank." },
+        { speaker: "Traveler", text: "Got it. Thank you for your help." },
+      ],
+      vocabulary: [
+        { word: "train station", definition: "the place where trains arrive and leave" },
+        { word: "go straight", definition: "continue forward without turning" },
+        { word: "turn left", definition: "move in the direction on your left side" },
+      ],
+      grammar: "Use 'I'm trying to...' to explain your immediate goal when asking for help in a place.",
+    };
+  }
+
+  return {
+    title: sceneTitle,
+    dialogue: [
+      { speaker: "Partner", text: `Let's practice the scene about ${sceneTitle}. What do you need to say first here?` },
+      { speaker: "Learner", text: `I want to talk about ${sceneTitle.toLowerCase()} clearly.` },
+      { speaker: "Partner", text: "Good. Say your main need first, and then add one key detail." },
+      { speaker: "Learner", text: "Sure. I'll explain it step by step." },
+    ],
+    vocabulary: [
+      { word: "main need", definition: "the most important thing you want to express first" },
+      { word: "detail", definition: "extra information that makes your meaning clearer" },
+      { word: "step by step", definition: "in a clear order, one part at a time" },
+    ],
+    grammar: `In ${sceneTitle}, start with your main purpose first and then add a useful detail such as time, place, or reason.`,
+  };
+}
+
+export async function generateContent(prompt: string) {
+  if (!ai) {
+    return JSON.stringify({
+      ...buildScenarioDialogue(extractTopicFromPrompt(prompt)),
       prompt,
     });
   }

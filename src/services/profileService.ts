@@ -1,8 +1,7 @@
 import { db } from "../lib/firebase.js";
 import type { AuthContext } from "../lib/auth.js";
 import type { UserProfile } from "../types.js";
-
-const memoryProfiles = new Map<string, UserProfile>();
+import { getUserProfile, upsertUserProfile } from "./userTableService.js";
 
 function toIso(value: unknown) {
   if (value && typeof value === "object" && "toDate" in value && typeof (value as { toDate?: unknown }).toDate === "function") {
@@ -22,7 +21,7 @@ function toIso(value: unknown) {
 
 export async function getOrCreateProfile(auth: AuthContext): Promise<UserProfile> {
   if (!db) {
-    const existing = memoryProfiles.get(auth.uid);
+    const existing = await getUserProfile(auth.uid);
     if (existing) {
       const merged = {
         ...existing,
@@ -30,7 +29,7 @@ export async function getOrCreateProfile(auth: AuthContext): Promise<UserProfile
         displayName: auth.displayName,
         photoURL: auth.photoURL,
       };
-      memoryProfiles.set(auth.uid, merged);
+      await upsertUserProfile(merged);
       return merged;
     }
 
@@ -46,7 +45,7 @@ export async function getOrCreateProfile(auth: AuthContext): Promise<UserProfile
       createdAt: now,
       lastActiveAt: now,
     };
-    memoryProfiles.set(auth.uid, profile);
+    await upsertUserProfile(profile);
     return profile;
   }
 
@@ -92,7 +91,7 @@ export async function getOrCreateProfile(auth: AuthContext): Promise<UserProfile
 export async function touchProfile(auth: AuthContext) {
   if (!db) {
     const existing = await getOrCreateProfile(auth);
-    memoryProfiles.set(auth.uid, {
+    await upsertUserProfile({
       ...existing,
       email: auth.email,
       displayName: auth.displayName,

@@ -1,0 +1,2 @@
+book_slug,title,description,table_name,word_count,source
+"categorized-collection","按类型区分（4000词）","由用户提供的 IELTS 词汇表整合而成，按主题类型归档。","categorized_collection.csv","4341","ielts-word-deck.ts"

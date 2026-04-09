@@ -1,8 +1,7 @@
 import { db } from "../lib/firebase.js";
 import type { AuthContext } from "../lib/auth.js";
 import type { WordProgressEntry, WordProgressStatus } from "../types.js";
-
-const memoryWordProgress = new Map<string, Map<string, WordProgressEntry>>();
+import { listWordProgressByUser, upsertWordProgressEntries } from "./userTableService.js";
 
 function toIso(value: unknown) {
   if (value && typeof value === "object" && "toDate" in value && typeof (value as { toDate?: unknown }).toDate === "function") {
@@ -22,7 +21,7 @@ function toIso(value: unknown) {
 
 export async function listWordProgress(auth: AuthContext) {
   if (!db) {
-    return Array.from(memoryWordProgress.get(auth.uid)?.values() ?? []);
+    return listWordProgressByUser(auth.uid);
   }
 
   const snapshot = await db.collection("users").doc(auth.uid).collection("wordProgress").get();
@@ -38,12 +37,7 @@ export async function listWordProgress(auth: AuthContext) {
 
 export async function upsertWordProgress(auth: AuthContext, entries: WordProgressEntry[]) {
   if (!db) {
-    const userMap = memoryWordProgress.get(auth.uid) ?? new Map<string, WordProgressEntry>();
-    for (const entry of entries) {
-      userMap.set(entry.word, entry);
-    }
-    memoryWordProgress.set(auth.uid, userMap);
-    return Array.from(userMap.values());
+    return upsertWordProgressEntries(auth.uid, entries);
   }
 
   const batch = db.batch();

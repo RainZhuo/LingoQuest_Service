@@ -11,6 +11,8 @@ import { generateContent, chatCompletion } from "./lib/ai.js";
 import { parseLessonResponse } from "./lib/lesson.js";
 import { completeLesson } from "./services/progressService.js";
 import { listWordProgress, upsertWordProgress } from "./services/wordProgressService.js";
+import { getWordBook, listScenarioBands, listWordBooks } from "./services/libraryService.js";
+import { listDiscoverScenarios, listDiscoverWordBooks } from "./services/discoverService.js";
 import type { LessonLevel, TutorMessage } from "./types.js";
 
 const app = express();
@@ -65,6 +67,72 @@ app.get("/api/users/me", requireAuth, async (req, res) => {
   return ok(res, { profile });
 });
 
+app.get("/api/library/scenarios", requireAuth, async (req, res) => {
+  try {
+    const bands = await listScenarioBands();
+    return ok(res, { bands });
+  } catch (error) {
+    req.log?.error({ error }, "library_scenarios_failed");
+    return fail(
+      res,
+      500,
+      "INTERNAL_ERROR",
+      error instanceof Error ? error.message : "Scenario library could not be loaded.",
+    );
+  }
+});
+
+app.get("/api/library/word-books", requireAuth, async (req, res) => {
+  try {
+    const books = await listWordBooks();
+    return ok(res, { books });
+  } catch (error) {
+    req.log?.error({ error }, "library_word_books_failed");
+    return fail(
+      res,
+      500,
+      "INTERNAL_ERROR",
+      error instanceof Error ? error.message : "Word books could not be loaded.",
+    );
+  }
+});
+
+app.get("/api/library/word-books/:bookSlug", requireAuth, async (req, res) => {
+  try {
+    const bookSlug = Array.isArray(req.params.bookSlug) ? req.params.bookSlug[0] : req.params.bookSlug;
+    const book = await getWordBook(bookSlug);
+
+    if (!book) {
+      return fail(res, 404, "NOT_FOUND", "Word book not found.");
+    }
+
+    return ok(res, { book });
+  } catch (error) {
+    req.log?.error({ error }, "library_word_book_detail_failed");
+    return fail(
+      res,
+      500,
+      "INTERNAL_ERROR",
+      error instanceof Error ? error.message : "Word book detail could not be loaded.",
+    );
+  }
+});
+
+app.get("/api/discover", requireAuth, async (req, res) => {
+  try {
+    const [scenarios, wordBooks] = await Promise.all([listDiscoverScenarios(), listDiscoverWordBooks()]);
+    return ok(res, { scenarios, wordBooks });
+  } catch (error) {
+    req.log?.error({ error }, "discover_library_failed");
+    return fail(
+      res,
+      500,
+      "INTERNAL_ERROR",
+      error instanceof Error ? error.message : "Discover library could not be loaded.",
+    );
+  }
+});
+
 app.post("/api/lessons/generate", requireAuth, async (req, res) => {
   const schema = z.object({
     topic: z.string().trim().min(1),
@@ -80,10 +148,16 @@ app.post("/api/lessons/generate", requireAuth, async (req, res) => {
 
   try {
     const prompt = `Create a short English lesson about "${parsed.data.topic}" for a "${parsed.data.learnerLevel}" level student.
-Include:
-1. A short dialogue (3-4 exchanges).
-2. 3 key vocabulary words with definitions.
-3. A simple grammar point explanation.
+The lesson is for a scenario-speaking app, so the dialogue must feel like a real scene, not a generic textbook exchange.
+
+Requirements:
+1. Write a short dialogue with exactly 4 lines and 2 speakers.
+2. The first speaker's first line must clearly anchor the scene and guide the learner's answer.
+3. Avoid vague openings like "How can I help you?" unless the situation is already explicit in the same sentence.
+4. The learner's reply must be obviously related to the current scenario and easy to imitate.
+5. Include 3 key vocabulary words with definitions.
+6. Include 1 simple grammar point explanation.
+
 Format the output as JSON with keys: title, dialogue, vocabulary, grammar.
 Each dialogue item must contain speaker and text.
 Each vocabulary item must contain word and definition.

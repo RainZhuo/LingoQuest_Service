@@ -1,15 +1,7 @@
 import { db } from "../lib/firebase.js";
 import type { AuthContext } from "../lib/auth.js";
 import type { LessonCompletionResult, LessonLevel } from "../types.js";
-
-const memoryState = new Map<
-  string,
-  {
-    xp: number;
-    streak: number;
-    completions: Set<string>;
-  }
->();
+import { appendLessonCompletion, getLessonCompletion, getUserProfile, upsertUserProfile } from "./userTableService.js";
 
 function levelFromXp(xp: number) {
   return Math.max(1, Math.floor(xp / 100) + 1);
@@ -24,24 +16,47 @@ export async function completeLesson(params: {
 }): Promise<LessonCompletionResult> {
   if (!db) {
     const now = new Date().toISOString();
-    const state = memoryState.get(params.auth.uid) ?? {
+    const profile = (await getUserProfile(params.auth.uid)) ?? {
+      uid: params.auth.uid,
+      email: params.auth.email,
+      displayName: params.auth.displayName,
+      photoURL: params.auth.photoURL,
+      level: 1,
       xp: 0,
       streak: 0,
-      completions: new Set<string>(),
+      createdAt: now,
+      lastActiveAt: now,
     };
-    const duplicate = state.completions.has(params.lessonId);
+
+    const duplicate = Boolean(await getLessonCompletion(params.auth.uid, params.lessonId));
     const awardedXp = duplicate ? 0 : 50;
-    const nextXp = state.xp + awardedXp;
-    const nextStreak = duplicate ? state.streak : state.streak + 1;
+    const nextXp = profile.xp + awardedXp;
+    const nextStreak = duplicate ? profile.streak : profile.streak + 1;
     const nextLevel = levelFromXp(nextXp);
 
     if (!duplicate) {
-      state.completions.add(params.lessonId);
+      await appendLessonCompletion({
+        lessonId: params.lessonId,
+        uid: params.auth.uid,
+        topic: params.topic,
+        learnerLevel: params.learnerLevel,
+        score: params.score,
+        awardedXp,
+        completed: true,
+        completedAt: now,
+      });
     }
 
-    state.xp = nextXp;
-    state.streak = nextStreak;
-    memoryState.set(params.auth.uid, state);
+    await upsertUserProfile({
+      ...profile,
+      email: params.auth.email,
+      displayName: params.auth.displayName,
+      photoURL: params.auth.photoURL,
+      xp: nextXp,
+      level: nextLevel,
+      streak: nextStreak,
+      lastActiveAt: now,
+    });
 
     return {
       progress: {

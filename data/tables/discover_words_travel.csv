@@ -1,0 +1,7 @@
+bookSlug,word,chinese,phonetic,example,topic,sortOrder
+"travel-survival-pack","boarding pass","登机牌","/ˈbɔːdɪŋ pɑːs/","I can't find my boarding pass on my phone.","机场","1"
+"travel-survival-pack","itinerary","行程单","/aɪˈtɪnərəri/","Could you email me the updated itinerary?","机场","2"
+"travel-survival-pack","check-in","办理入住/值机","/ˈtʃek ɪn/","What time does check-in open?","酒店","3"
+"travel-survival-pack","reservation","预订","/ˌrezəˈveɪʃn/","I have a reservation under Zhang.","酒店","4"
+"travel-survival-pack","platform","站台","/ˈplætfɔːm/","Which platform does the train leave from?","交通","5"
+"travel-survival-pack","detour","绕行","/ˈdiːtʊə(r)/","We had to take a detour because the road was closed.","交通","6"
