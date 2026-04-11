@@ -438,6 +438,22 @@ function getSceneTags(bandCode, sceneTitle) {
   return `${bandCode}|${slugify(sceneTitle)}`;
 }
 
+function stripChinesePrefix(value) {
+  return String(value ?? "")
+    .replace(/^(n|v|adj|adv|prep|pron|conj|interj|num)\.\s*/i, "")
+    .replace(/[；;].*$/, "")
+    .trim();
+}
+
+function buildWordHint(item, normalizedTopic) {
+  const meaning = stripChinesePrefix(item.chinese);
+  const focus = normalizedTopic.subtopic && normalizedTopic.subtopic !== normalizedTopic.topic
+    ? `${normalizedTopic.topic}里的“${normalizedTopic.subtopic}”`
+    : normalizedTopic.topic;
+
+  return `放到“${focus}”这一类里记，先把 ${item.word} 和“${meaning}”稳定对应起来，再连同例句一起复用。`;
+}
+
 function buildScenarioRows() {
   const rows = [
     {
@@ -559,6 +575,7 @@ function buildWordbookRows(deck) {
       phonetic: item.phonetic,
       chinese: item.chinese,
       example: item.example,
+      hint: buildWordHint(item, normalizedTopic),
       sort_order: index + 1,
     };
   });
@@ -615,6 +632,7 @@ async function main() {
     "phonetic",
     "chinese",
     "example",
+    "hint",
     "sort_order",
   ]);
 

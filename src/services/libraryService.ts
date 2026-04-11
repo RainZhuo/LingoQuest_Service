@@ -1,6 +1,7 @@
 import { readFile } from "node:fs/promises";
 import path from "node:path";
 import { parseCsv } from "../lib/csv.js";
+import { getSceneEnglishTitle } from "../data/sceneEnglishTitles.js";
 
 type ScenarioCsvRow = {
   node_id: string;
@@ -10,6 +11,7 @@ type ScenarioCsvRow = {
   band_title: string;
   scene_slug: string;
   scene_title: string;
+  scene_title_en: string;
   stage_key: string;
   stage_title: string;
   sort_order: string;
@@ -43,6 +45,7 @@ type WordBookEntryCsvRow = {
   phonetic: string;
   chinese: string;
   example: string;
+  hint: string;
   sort_order: string;
 };
 
@@ -64,6 +67,7 @@ export type LibraryScenarioTrack = {
   id: string;
   slug: string;
   title: string;
+  englishTitle: string;
   summary: string;
   topic: string;
   tags: string[];
@@ -104,6 +108,7 @@ export type LibraryWordBookWord = {
   phonetic: string;
   chinese: string;
   example: string;
+  hint: string;
   sortOrder: number;
 };
 
@@ -172,6 +177,7 @@ export async function listScenarioBands() {
         id: row.node_id,
         slug: row.scene_slug,
         title: row.scene_title,
+        englishTitle: row.scene_title_en || getSceneEnglishTitle(row.scene_slug, row.scene_title),
         summary: row.summary,
         topic: row.topic,
         tags: splitTags(row.tags),
@@ -262,6 +268,7 @@ export async function getWordBook(slug: string) {
       phonetic: row.phonetic,
       chinese: row.chinese,
       example: row.example,
+      hint: row.hint,
       sortOrder: toNumber(row.sort_order),
     }))
     .sort((left, right) => left.sortOrder - right.sortOrder);
