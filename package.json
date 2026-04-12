@@ -15,6 +15,7 @@
     "@google/genai": "^1.44.0",
     "cors": "^2.8.5",
     "dotenv": "^17.2.3",
+    "edge-tts": "^1.0.1",
     "express": "^4.21.2",
     "firebase-admin": "^13.4.0",
     "pino": "^9.7.0",

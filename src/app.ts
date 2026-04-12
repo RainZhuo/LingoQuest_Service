@@ -2,6 +2,7 @@ import express, { type NextFunction, type Request, type Response } from "express
 import cors from "cors";
 import pinoHttp from "pino-http";
 import { z } from "zod";
+import { tts } from "edge-tts";
 import { env } from "./config.js";
 import { logger } from "./lib/logger.js";
 import { fail, ok } from "./lib/http.js";
@@ -38,6 +39,40 @@ app.get("/api/health", (_req, res) => {
     service: "lingoquest-service",
     timestamp: new Date().toISOString(),
   });
+});
+
+app.get("/api/tts", async (req, res) => {
+  const schema = z.object({
+    text: z.string().trim().min(1).max(240),
+    voice: z.string().trim().min(1).max(80).optional(),
+    rate: z.string().trim().min(1).max(16).optional(),
+  });
+
+  const parsed = schema.safeParse(req.query);
+  if (!parsed.success) {
+    return fail(res, 400, "VALIDATION_ERROR", "TTS query is invalid.", {
+      fieldErrors: parsed.error.flatten().fieldErrors,
+    });
+  }
+
+  try {
+    const audioBuffer = await tts(parsed.data.text, {
+      voice: parsed.data.voice ?? "en-US-AvaMultilingualNeural",
+      rate: parsed.data.rate ?? "-8%",
+    });
+
+    res.setHeader("Content-Type", "audio/mpeg");
+    res.setHeader("Cache-Control", "public, max-age=86400");
+    return res.status(200).send(Buffer.from(audioBuffer));
+  } catch (error) {
+    req.log?.error({ error }, "tts_failed");
+    return fail(
+      res,
+      502,
+      "TTS_FAILED",
+      error instanceof Error ? error.message : "Text-to-speech failed.",
+    );
+  }
 });
 
 async function requireAuth(req: Request, res: Response, next: NextFunction) {
